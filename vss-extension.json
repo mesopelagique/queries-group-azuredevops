@@ -1,10 +1,10 @@
 {
     "manifestVersion": 1,
-    "id": "parents",
-    "version": "0.0.35",
-    "name": "Parents",
+    "id": "queries",
+    "version": "0.0.2",
+    "name": "Queries",
     "scopes": [ "vso.work", "vso.work_write" ],
-    "description": "Show all parents.",
+    "description": "Show some useful queries.",
     "publisher": "mesopelagique",
     "icons": {
         "default": "dist/img/logo.png"
@@ -46,11 +46,11 @@
             "addressable": true
         },
         {
-            "path": "dist/parents.html",
+            "path": "dist/queries.html",
             "addressable": true
         },
         {
-            "path": "dist/parents.css",
+            "path": "dist/queries.css",
             "addressable": true
         }
     ],
@@ -66,8 +66,8 @@
                 "ms.vss-work-web.work-item-form"
             ],
             "properties": {
-                "name": "Parents",
-                "uri": "parents.html",
+                "name": "Queries",
+                "uri": "queries.html",
                 "height": 180
             }
         }

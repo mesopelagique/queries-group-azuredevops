@@ -1,6 +1,6 @@
-# Parents-group
+# Queries-group
 
-Add parents links for current work item.
+Add queries links for current work item.
 
 ![Screenshot](img/Screenshot.png)
 
@@ -15,3 +15,4 @@ npm run package-dev
 ```bash
 npm install -g tfx-cli
 ```
+

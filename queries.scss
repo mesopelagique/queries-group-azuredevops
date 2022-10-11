@@ -1,13 +1,13 @@
 @import "colors";
 
-.parent-group {
+.querie-group {
   padding-left: 4px;
-  .parent-info {
+  .querie-info {
     float: right;
-    &:not(:hover):not(:focus) .parent-callout {
+    &:not(:hover):not(:focus) .querie-callout {
       visibility: hidden;
     }
-    .parent-callout {
+    .querie-callout {
       font-family: "-apple-system", BlinkMacSystemFont, "Segoe UI", Roboto,
         "Helvetica Neue", Helvetica, Ubuntu, Arial, sans-serif,
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -28,12 +28,12 @@
       }
     }
   }
-  .parents-control {
-    .parent-link {
+  .queries-control {
+    .querie-link {
       margin-bottom: 5px;
       font-size: 15px;
     }
-    .parent-selector {
+    .querie-selector {
       padding: 0px;
       background-color: transparent;
       vertical-align: middle;
@@ -107,7 +107,7 @@
   /* .disclaimer {
     margin-top: 10px;
 } */
-  .parent-error {
+  .querie-error {
     @include color(red);
   }
 }
