@@ -1,9 +1,7 @@
 import { Control } from "VSS/Controls";
 import { IWorkItemChangedArgs, IWorkItemLoadedArgs } from "TFS/WorkItemTracking/ExtensionContracts";
-import { WorkItem, WorkItemType, WorkItemExpand} from "TFS/WorkItemTracking/Contracts"
 import { WorkItemFormService } from "TFS/WorkItemTracking/Services";
-import { getClient } from "TFS/WorkItemTracking/RestClient";
-import { idField, witField, projectField, titleField, parentField, typeField } from "./fieldNames";
+import { idField, projectField, parentField, typeField } from "./fieldNames";
 
 class Query {
     name: string;
@@ -17,7 +15,8 @@ class Query {
     }
 
     link(id: number, orga: string, project: string, parent: number): string {
-        const url = `https://${orga}.visualstudio.com/${project}/_workitems?_a=query&wiql=`;
+        const baseURL = `https://${orga}.visualstudio.com/${project}`
+        const url = `${baseURL}/_workitems?_a=query&wiql=`; // XXX maybe use _queries/query/?wiql=
         var ql = this.wiql.replace("{{id}}", id.toString());
         if (parent) {
             ql = ql.replace("{{parent}}", parent.toString());
@@ -30,7 +29,7 @@ export class QueriesControl extends Control<{}> {
     // data
     private wiId: number;
     private project: string;
-    private type: string;
+    //private type: string;
     private parent: number;
     private orga: string;
  
@@ -39,9 +38,9 @@ export class QueriesControl extends Control<{}> {
         const fields = await formService.getFieldValues([idField, projectField, typeField, parentField]);
         this.wiId = fields[idField] as number;
         this.project = fields[projectField] as string;
-        this.type = fields[typeField] as string;
+        //this.type = fields[typeField] as string;
         this.parent = fields[parentField] as number;
-        this.orga = "4edimension";  // XXX TODO correct URL according to organisation
+        this.orga = "4dimension";  // XXX TODO correct URL according to organisation
         await this.updateQueries();
     }
 
@@ -52,8 +51,8 @@ export class QueriesControl extends Control<{}> {
         const self = this;
 
         var queries: Query[] = [];
-        queries.push(new Query("Children tree", "bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' ) MODE (Recursive)"));
-        queries.push(new Query("Opened children tree","bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved') MODE (Recursive)"));
+        queries.push(new Query("Children tree", "bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' ) MODE (Recursive)"));
+        queries.push(new Query("Children tree (only open)","bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved') MODE (Recursive)"));
         if (this.parent) {
             queries.push(new Query("Siblings", "bowtie-group-rows ", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM WorkItems WHERE ([System.Parent] = {{parent}})"));
         }
@@ -66,7 +65,7 @@ export class QueriesControl extends Control<{}> {
             const primaryicon = $("<div class=\"la-primary-icon\" style=\"display: inline;\">&nbsp;</div>").appendTo(primarydata);
             $("<span aria-hidden=\"true\" class=\"bowtie-icon "+query.icon+" flex-noshrink\"> </span>&nbsp;").appendTo(primaryicon);
 
-            const link = $("<div class=\"ms-TooltipHost \" style=\"display: inline;\"></div>").appendTo(primarydata);
+            const link = $("<div class=\"ms-TooltipHost \" style=\"display: inline;\">&nbsp;</div>").appendTo(primarydata);
             $("<a/>").text(query.name)
             .attr({
                 href: query.link(self.wiId, self.orga, self.project, self.parent),

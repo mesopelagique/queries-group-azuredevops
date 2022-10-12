@@ -1,6 +1,6 @@
 # Queries-group
 
-Add queries links for current work item.
+Add useful queries links for current work item.
 
 ![Screenshot](img/Screenshot.png)
 
