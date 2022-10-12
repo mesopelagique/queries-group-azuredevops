@@ -1,19 +1,17 @@
 {
     "manifestVersion": 1,
     "id": "queries",
-    "version": "0.0.2",
+    "version": "0.0.1",
     "name": "Queries",
-    "scopes": [ "vso.work", "vso.work_write" ],
+    "scopes": ["vso.work", "vso.work_write"],
     "description": "Show some useful queries.",
     "publisher": "mesopelagique",
     "icons": {
         "default": "dist/img/logo.png"
     },
-    "targets": [
-        {
-            "id": "Microsoft.VisualStudio.Services"
-        }
-    ],
+    "targets": [{
+        "id": "Microsoft.VisualStudio.Services"
+    }],
     "restrictedTo": [
         "Member",
         "Public",
@@ -36,8 +34,7 @@
         "color": "rgb(220, 235, 252)",
         "theme": "light"
     },
-    "files": [
-        {
+    "files": [{
             "path": "dist/img",
             "addressable": true
         },
@@ -57,19 +54,17 @@
     "categories": [
         "Azure Repos"
     ],
-    "contributions": [
-        {  
-            "id": "full-hierarchy-work-item-form-group",
-            "type": "ms.vss-work-web.work-item-form-group",
-            "description": "Custom work item form group",
-            "targets": [
-                "ms.vss-work-web.work-item-form"
-            ],
-            "properties": {
-                "name": "Queries",
-                "uri": "queries.html",
-                "height": 180
-            }
+    "contributions": [{
+        "id": "full-hierarchy-work-item-form-group",
+        "type": "ms.vss-work-web.work-item-form-group",
+        "description": "Custom work item form group",
+        "targets": [
+            "ms.vss-work-web.work-item-form"
+        ],
+        "properties": {
+            "name": "Queries",
+            "uri": "queries.html",
+            "height": 180
         }
-    ]
+    }]
 }

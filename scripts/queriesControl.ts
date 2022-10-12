@@ -3,96 +3,73 @@ import { IWorkItemChangedArgs, IWorkItemLoadedArgs } from "TFS/WorkItemTracking/
 import { WorkItem, WorkItemType, WorkItemExpand} from "TFS/WorkItemTracking/Contracts"
 import { WorkItemFormService } from "TFS/WorkItemTracking/Services";
 import { getClient } from "TFS/WorkItemTracking/RestClient";
-import { idField, witField, projectField, titleField, parentField } from "./fieldNames";
+import { idField, witField, projectField, titleField, parentField, typeField } from "./fieldNames";
+
+class Query {
+    name: string;
+    icon: string;
+    wiql: string;
+
+    constructor(name: string, icon: string, wiql: string) {
+        this.name = name;
+        this.icon = icon;
+        this.wiql = wiql;
+    }
+
+    link(id: number, orga: string, project: string, parent: number): string {
+        const url = `https://${orga}.visualstudio.com/${project}/_workitems?_a=query&wiql=`;
+        var ql = this.wiql.replace("{{id}}", id.toString());
+        if (parent) {
+            ql = ql.replace("{{parent}}", parent.toString());
+        }
+        return url+ encodeURIComponent(ql);
+    }
+}
 
 export class QueriesControl extends Control<{}> {
     // data
     private wiId: number;
-    private queries: WorkItem[];
-    private types: Map<string, WorkItemType> = new Map<string, WorkItemType>();
+    private project: string;
+    private type: string;
+    private parent: number;
+    private orga: string;
  
-    private async fillQueries(wi: WorkItem, project: string) {
-        const parentId = wi.fields[parentField];
-        if(parentId && parentId>=0) {
-            const parentWi: WorkItem = await getClient().getWorkItem(parentId, [idField, titleField, parentField, witField], undefined, undefined, project);
-            if (parentWi) {
-                this.queries.push(parentWi);
-                await this.fillTypes(parentWi, project);
-                await this.fillQueries(parentWi, project);
-            } 
-        } else {
-            if (wi.fields[witField] == "Test Case") { //  Microsoft.VSTS.WorkItemTypes.TestCase
-                const wiRelation: WorkItem = await getClient().getWorkItem(wi.id, undefined, undefined, WorkItemExpand.Relations, project);
-                const relations = wiRelation.relations.filter(relation => relation.rel == "Microsoft.VSTS.Common.TestedBy-Reverse");
-                if (relations.length > 0) {
-                    const relationId = Number(relations[0].url.split('/').pop()) // .attributes[idField];
-                    console.log(relationId);
-                    const parentWi: WorkItem = await getClient().getWorkItem(relationId, [idField, titleField, parentField, witField], undefined, undefined, project);
-                    this.queries.push(parentWi);
-                    await this.fillTypes(parentWi, project);
-                    await this.fillQueries(parentWi, project);
-                }
-            }
-        }
-    }
-
-    private async fillTypes(wi: WorkItem, project: string) {
-        const type = wi.fields[witField];
-        if (!this.types.has(type)) {
-            this.types.set(type, await getClient().getWorkItemType(project, type));
-        }
-    }
-
     public async refresh() {
         const formService = await WorkItemFormService.getService();
-        const fields = await formService.getFieldValues([idField, projectField]);
+        const fields = await formService.getFieldValues([idField, projectField, typeField, parentField]);
         this.wiId = fields[idField] as number;
-   
-        const project = fields[projectField] as string;
-        this.queries = [];
-        const wi: WorkItem = await getClient().getWorkItem(this.wiId, [parentField, witField], undefined, undefined, project);
-        await this.fillQueries(wi, project);
-        // update ui
-        if (this.queries && this.queries.length != 0) {
-            await this.updateQueries();
-        } else {
-            this.updateNoQuerie();
-        }
-    }
-
-    private updateNoQuerie() {
-        this._element.html(`<div class="no-queries-message">No queries</div>`);
-        VSS.resize(window.innerWidth, $(".querie-callout").outerHeight() + 16)
+        this.project = fields[projectField] as string;
+        this.type = fields[typeField] as string;
+        this.parent = fields[parentField] as number;
+        this.orga = "4edimension";  // XXX TODO correct URL according to organisation
+        await this.updateQueries();
     }
 
     private async updateQueries() {
         this._element.html("");
         const list = $("<div class=\"la-list\"></div>").appendTo(this._element);
-        const types = this.types
-        this.queries.forEach(function (parent) {
+
+        const self = this;
+
+        var queries: Query[] = [];
+        queries.push(new Query("Children tree", "bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' ) MODE (Recursive)"));
+        queries.push(new Query("Opened children tree","bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved') MODE (Recursive)"));
+        if (this.parent) {
+            queries.push(new Query("Siblings", "bowtie-group-rows ", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM WorkItems WHERE ([System.Parent] = {{parent}})"));
+        }
+        queries.forEach(function (query) {
             const item = $("<div class=\"la-item\"></div>").appendTo(list);
             const wrapper = $("<div class=\"la-item-wrapper\"></div>").appendTo(item);
             const artifactdata = $("<div class=\"la-artifact-data\"></div>").appendTo(wrapper);
             const primarydata = $("<div class=\"la-primary-data\"></div>").appendTo(artifactdata);
  
             const primaryicon = $("<div class=\"la-primary-icon\" style=\"display: inline;\">&nbsp;</div>").appendTo(primarydata);
-
-            const type: WorkItemType = types.get(parent.fields[witField])
-            if (type != null) {
-                const iconsymbol = "bowtie-symbol-"+type.icon.id
-                .replace("icon_", "")
-                .replace("symbol-check_box", "status-success-box")
-                .replace("_", ""); // no info how to convert api info and bowtie map
-                const iconcolor = "#"+type.color;
-                $("<span aria-hidden=\"true\" class=\"bowtie-icon "+iconsymbol+" flex-noshrink\" style=\"color: "+iconcolor+";\"> </span>&nbsp;").appendTo(primaryicon);
-            }
-           
-            $("<div class=\"la-primary-data-id\" style=\"display: inline;\">"+parent.fields[idField].toString()+"&nbsp;</div>").appendTo(primarydata);
+            $("<span aria-hidden=\"true\" class=\"bowtie-icon "+query.icon+" flex-noshrink\"> </span>&nbsp;").appendTo(primaryicon);
 
             const link = $("<div class=\"ms-TooltipHost \" style=\"display: inline;\"></div>").appendTo(primarydata);
-            $("<a/>").text(parent.fields[titleField])
+            $("<a/>").text(query.name)
             .attr({
-                href: parent._links["html"]["href"],
+                href: query.link(self.wiId, self.orga, self.project, self.parent),
                 target: "_blank",
                 title: "Navigate to parent"
             }).appendTo(link);
