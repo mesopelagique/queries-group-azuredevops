@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "queries",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "name": "Queries",
     "scopes": ["vso.work", "vso.work_write"],
     "description": "Show some useful queries.",
