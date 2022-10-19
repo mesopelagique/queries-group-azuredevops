@@ -29,7 +29,7 @@ export class QueriesControl extends Control<{}> {
     // data
     private wiId: number;
     private project: string;
-    //private type: string;
+    private type: string;
     private parent: number;
     private orga: string;
  
@@ -38,7 +38,7 @@ export class QueriesControl extends Control<{}> {
         const fields = await formService.getFieldValues([idField, projectField, typeField, parentField]);
         this.wiId = fields[idField] as number;
         this.project = fields[projectField] as string;
-        //this.type = fields[typeField] as string;
+        this.type = fields[typeField] as string;
         this.parent = fields[parentField] as number;
         this.orga = "4dimension";  // XXX TODO correct URL according to organisation
         await this.updateQueries();
@@ -50,10 +50,15 @@ export class QueriesControl extends Control<{}> {
 
         const self = this;
 
+        var moreColums = "";
+        if (this.type == "Feature") {
+            moreColums = ",[Microsoft.VSTS.CMMI.UserAcceptanceTest]";
+        }
+
         var queries: Query[] = [];
-        queries.push(new Query("Children tree", "bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' ) MODE (Recursive)"));
-        queries.push(new Query("Children tree (only open)","bowtie-view-list-tree", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved' AND [Target].[System.State] <> 'Rejected') MODE (Recursive)"));
-        queries.push(new Query("Children tree (only open and assigned to me)","bowtie-work-item-bug", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved' AND [Target].[System.State] <> 'Rejected' AND [Target].[System.AssignedTo] = @me) MODE (Recursive)"));
+        queries.push(new Query("Children tree", "bowtie-view-list-tree", `SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo],[System.State],[System.Tags]${moreColums} FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' ) MODE (Recursive)`));
+        queries.push(new Query("Children tree (only open)","bowtie-view-list-tree", `SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo],[System.State],[System.Tags]${moreColums} FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved' AND [Target].[System.State] <> 'Rejected') MODE (Recursive)`));
+        queries.push(new Query("Children tree (only open and assigned to me)","bowtie-work-item-bug", `SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo],[System.State],[System.Tags]${moreColums} FROM workitemLinks WHERE ([Source].[System.TeamProject] = @project AND [Source].[System.Id] = {{id}}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') AND ([Target].[System.TeamProject] = @project AND [Target].[System.WorkItemType] <> '' AND [Target].[System.State] <> 'Closed' AND [Target].[System.State] <> 'Resolved' AND [Target].[System.State] <> 'Rejected' AND [Target].[System.AssignedTo] = @me) MODE (Recursive)`));
         if (this.parent) {
             queries.push(new Query("Siblings", "bowtie-group-rows ", "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.AssignedTo], [System.State],[System.Tags] FROM WorkItems WHERE ([System.Parent] = {{parent}})"));
         }
